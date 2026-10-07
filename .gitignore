@@ -1,0 +1,70 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Caches
+.vite/
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+
+# Test artifacts
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# Archives
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.local
+
+# AI agent / assistant tooling
+.claude*
+.agents/
+.agent/
+.opencode/
+.aider*
+.cursor/
+.cursorrules
+.windsurf/
+.continue/
+.codeium/
+.copilot/
+.gemini/
