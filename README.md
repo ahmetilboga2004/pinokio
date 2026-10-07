@@ -128,15 +128,19 @@ npm run build
 
 ## Step 9 — Add the extension redirect URL
 
-1. On the extension card in `chrome://extensions/`, copy the **ID**.
+1. On the extension card in `chrome://extensions/`, copy the **ID** from the **Identity** section (a 32-character string). Chrome never shows a full URL anywhere — you build it yourself from the ID.
 2. In Supabase, open **Authentication → URL Configuration**.
-3. Add this URL to the redirect allow list (replace `EXTENSION_ID`):
+3. Click **Add URL** under **Redirect URLs** (the list, not the Site URL field) and add:
 
 ```
 https://EXTENSION_ID.chromiumapp.org/pinokio
 ```
 
-Sign-in works after this step. A different computer can get a different unpacked extension ID, so add each new ID here.
+Replace `EXTENSION_ID` with your ID. Example: ID `abcdefghijklmnopabcdefghijklmnop` becomes `https://abcdefghijklmnopabcdefghijklmnop.chromiumapp.org/pinokio`.
+
+Tip: also add `https://*.chromiumapp.org/pinokio` as a wildcard entry. Then sign-in keeps working when the unpacked extension ID changes on another machine or folder.
+
+Sign-in works after this step. A different computer can get a different unpacked extension ID, so without the wildcard entry, add each new ID here.
 
 ## Step 10 — After a code change
 
@@ -145,6 +149,28 @@ Sign-in works after this step. A different computer can get a different unpacked
 3. Reload your website tabs too.
 
 Removing and loading the extension again clears its saved session and team selection.
+
+## Troubleshooting sign-in
+
+**"Error: Authorization page could not be loaded"**
+
+This error means the sign-in popup could not finish the redirect chain. Work through this list in order:
+
+1. **Redirect URL missing (most common).** The sign-in window opens, you pick your account and continue, then the popup closes with this error. Cause: Supabase does not recognize the extension's redirect URL, so it falls back to the Site URL (`http://localhost:3000`) instead. Fix: add the exact URL from Step 9 to **Authentication → URL Configuration → Redirect URLs** (the list, not the Site URL field).
+2. **Provider callback URL points to an old project.** This happens after switching to a new Supabase project. Fix the provider's callback on the provider's own site:
+   - Google: <https://console.cloud.google.com/auth/clients> → your client → **Authorized redirect URIs** → `https://PROJECT_REF.supabase.co/auth/v1/callback` (your new project's callback).
+   - GitHub: <https://github.com/settings/developers> → your OAuth app → **Authorization callback URL** → same address.
+3. **Provider not enabled in Supabase.** Check **Authentication → Providers** and make sure the provider is on with a valid client ID and secret.
+
+**How to test without the extension:** open this URL in a normal browser tab and follow the sign-in:
+
+```
+https://PROJECT_REF.supabase.co/auth/v1/authorize?provider=github&redirect_to=https://EXTENSION_ID.chromiumapp.org/pinokio
+```
+
+- You end on `...chromiumapp.org/pinokio?code=...` with "site can't be reached" → the whole chain works. This is the expected end point; only the extension can open that address.
+- You end on `http://localhost:3000` or your Site URL → the redirect URL from Step 9 is missing or does not match exactly.
+- You see a provider error page → check item 2 above.
 
 ## Everyday use
 

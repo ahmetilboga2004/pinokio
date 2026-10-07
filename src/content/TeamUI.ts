@@ -9,6 +9,7 @@ import { escapeHTML, imageURL } from './dom';
 
 export class TeamUIManager {
   public container: HTMLElement;
+  public onTeamChanged: (() => void) | null = null;
   private currentTeamInterval: any;
   private disposed = false;
   private version = 0;
@@ -88,6 +89,42 @@ export class TeamUIManager {
         padding: 12px;
         margin-bottom: 12px;
       }
+      .t-section {
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .t-section:last-of-type {
+        border-bottom: none;
+      }
+      .t-section-label {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+      }
+      .t-section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+      .t-badge {
+        font-size: 10px;
+        font-weight: normal;
+        padding: 2px 6px;
+        border-radius: 10px;
+        background: rgba(178, 43, 45, 0.18);
+        color: var(--primary-color);
+      }
+      .t-badge-muted {
+        background: rgba(180, 174, 171, 0.16);
+        color: #c7c2c0;
+      }
       .t-code-box {
         display: flex;
         align-items: center;
@@ -95,11 +132,11 @@ export class TeamUIManager {
         background: var(--bg-primary);
         border: 1px solid var(--border-color);
         border-radius: 6px;
-        padding: 8px 12px;
+        padding: 6px 10px;
         font-family: monospace;
-        font-size: 16px;
+        font-size: 13px;
         font-weight: bold;
-        letter-spacing: 2px;
+        letter-spacing: 1px;
         color: var(--primary-color);
       }
       .t-copy-btn {
@@ -122,7 +159,7 @@ export class TeamUIManager {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 8px;
+        padding: 6px 2px;
         border-bottom: 1px solid var(--border-color);
         font-size: 12px;
       }
@@ -312,16 +349,16 @@ export class TeamUIManager {
 
     container.querySelector('#teamui-create-btn')?.addEventListener('click', async (e) => {
       const btn = e.currentTarget as HTMLButtonElement;
-       btn.innerHTML = 'Creating...';
+      btn.innerHTML = 'Creating...';
       btn.disabled = true;
       const team = await createTeam(user.id, window.location.origin);
       if (team) {
         await setActiveTeam(team);
-        this.render();
-        window.location.reload();
+        await this.render();
+        this.onTeamChanged?.();
       } else {
-         alert('Could not create team.');
-         btn.innerHTML = 'Create team';
+        alert('Could not create team.');
+        btn.innerHTML = 'Create team';
         btn.disabled = false;
       }
     });
@@ -348,7 +385,8 @@ export class TeamUIManager {
       if (req) {
         if (req.status === 'approved') {
           await setActiveTeam(team);
-          window.location.reload();
+          await this.render();
+          this.onTeamChanged?.();
         } else if (req.status === 'rejected') {
            statusDiv.style.color = '#e77570';
            statusDiv.innerText = 'Your request was declined by the team admin.';
@@ -359,7 +397,8 @@ export class TeamUIManager {
             if (status === 'approved') {
               this.stopPolling();
               await setActiveTeam(team);
-              window.location.reload();
+              await this.render();
+              this.onTeamChanged?.();
             } else if (status === 'rejected') {
               this.stopPolling();
                statusDiv.style.color = '#e77570';
@@ -380,49 +419,49 @@ export class TeamUIManager {
     const isAdmin = activeTeam.admin_id === user.id;
 
     container.innerHTML = `
-      <div class="t-card">
-         <div style="font-size:11px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Team code</div>
-         <div class="t-code-box" style="overflow-wrap:anywhere; letter-spacing:1px; font-size:13px;">
+      <div class="t-section" style="padding-top:4px;">
+        <div class="t-section-label">Team code</div>
+        <div class="t-code-box" style="overflow-wrap:anywhere;">
           <span id="teamui-code-text">${escapeHTML(activeTeam.team_code)}</span>
-           <button id="teamui-copy-btn" class="t-copy-btn" title="Copy code">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <button id="teamui-copy-btn" class="t-copy-btn" title="Copy code">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
           </button>
         </div>
-         <div id="teamui-copy-hint" style="font-size:10px; color:#c7c2c0; text-align:right; margin-top:4px; opacity:0; transition:opacity 0.2s;">Copied!</div>
+        <div id="teamui-copy-hint" style="font-size:10px; color:#c7c2c0; text-align:right; margin-top:3px; opacity:0; transition:opacity 0.2s;">Copied!</div>
       </div>
-      
+
       ${isAdmin ? `
-        <div class="t-card" style="padding:0; overflow:hidden;">
-          <div style="padding:10px 12px; background:var(--bg-primary); font-size:12px; font-weight:600; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
-             Join requests
-             <span style="font-size:10px; font-weight:normal; background:rgba(178,43,45,0.18); color:var(--primary-color); padding:2px 6px; border-radius:10px;" id="teamui-req-count">0</span>
+        <div class="t-section">
+          <div class="t-section-head">
+            Join requests
+            <span class="t-badge" id="teamui-req-count">0</span>
           </div>
-          <div id="teamui-requests-list" style="max-height:150px; overflow-y:auto; background:var(--bg-secondary);">
-             <div style="padding:16px; text-align:center; font-size:11px; color:var(--text-secondary);">Loading...</div>
+          <div id="teamui-requests-list" style="max-height:150px; overflow-y:auto;">
+            <div style="padding:10px; text-align:center; font-size:11px; color:var(--text-secondary);">Loading...</div>
           </div>
         </div>
       ` : `
-        <div class="t-card" style="display:flex; align-items:center; gap:10px;">
-           <div style="width:8px; height:8px; border-radius:50%; background:#b22b2d; box-shadow:0 0 8px #b22b2d;"></div>
-           <div style="font-size:12px; color:var(--text-primary);">Team sync is active.</div>
+        <div class="t-section" style="display:flex; align-items:center; gap:10px;">
+          <div style="width:8px; height:8px; border-radius:50%; background:#b22b2d; box-shadow:0 0 8px #b22b2d; flex-shrink:0;"></div>
+          <div style="font-size:12px; color:var(--text-primary);">Team sync is active.</div>
         </div>
       `}
-      
-      <div class="t-card" style="padding:0; overflow:hidden;">
-        <div style="padding:10px 12px; background:var(--bg-primary); font-size:12px; font-weight:600; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center;">
-           Team members
-           <span style="font-size:10px; font-weight:normal; background:rgba(180,174,171,0.16); color:#c7c2c0; padding:2px 6px; border-radius:10px;" id="teamui-members-count">0</span>
+
+      <div class="t-section">
+        <div class="t-section-head">
+          Team members
+          <span class="t-badge t-badge-muted" id="teamui-members-count">0</span>
         </div>
-        <div id="teamui-members-list" style="max-height:150px; overflow-y:auto; background:var(--bg-secondary);">
-           <div style="padding:16px; text-align:center; font-size:11px; color:var(--text-secondary);">Loading...</div>
+        <div id="teamui-members-list" style="max-height:150px; overflow-y:auto;">
+          <div style="padding:10px; text-align:center; font-size:11px; color:var(--text-secondary);">Loading...</div>
         </div>
       </div>
-      
-      <button id="teamui-leave-btn" class="t-btn t-btn-danger" style="margin-top:auto;">
+
+      <button id="teamui-leave-btn" class="t-btn t-btn-danger" style="margin-top:12px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
          Leave team
       </button>
-      <button id="teamui-signout-btn" class="t-btn t-btn-secondary" style="margin-top:8px;">Sign out of Google</button>
+      <button id="teamui-signout-btn" class="t-btn t-btn-secondary" style="margin-top:8px;">Sign out</button>
     `;
 
     // Copy Code Logic
@@ -440,7 +479,8 @@ export class TeamUIManager {
     container.querySelector('#teamui-leave-btn')?.addEventListener('click', async () => {
        if(confirm('Are you sure you want to leave this team?')) {
         await setActiveTeam(null);
-        window.location.reload();
+        await this.render();
+        this.onTeamChanged?.();
       }
     });
     container.querySelector('#teamui-signout-btn')?.addEventListener('click', () => void this.signOut());
@@ -469,7 +509,7 @@ export class TeamUIManager {
     }
 
     if (requests.length === 0) {
-       listContainer.innerHTML = '<div style="font-size:11px; color:var(--text-secondary); text-align:center; padding:16px;">No pending requests.</div>';
+       listContainer.innerHTML = '<div style="font-size:11px; color:var(--text-secondary); text-align:center; padding:10px;">No pending requests.</div>';
       return;
     }
 
@@ -519,7 +559,7 @@ export class TeamUIManager {
     }
 
     if (members.length === 0) {
-       listContainer.innerHTML = '<div style="font-size:11px; color:var(--text-secondary); text-align:center; padding:16px;">No members found.</div>';
+       listContainer.innerHTML = '<div style="font-size:11px; color:var(--text-secondary); text-align:center; padding:10px;">No members found.</div>';
       return;
     }
 

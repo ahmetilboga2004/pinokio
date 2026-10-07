@@ -1340,6 +1340,7 @@ class PinokioOverlay {
      this.teamToggleBtn.title = 'Team mode';
 
     this.teamUI = new TeamUIManager();
+    this.teamUI.onTeamChanged = () => { void this.loadComments(); };
     this.toolbarContainer.appendChild(this.teamUI.container);
 
     this.readBtn.onclick = () => {
